@@ -1,0 +1,26 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Accept Android licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - run: unzip -q JetSkirmish-Android-Project.zip
+      - run: cd JetSkirmish && gradle assembleDebug --no-daemon
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "v${{ github.run_number }}" JetSkirmish/app/build/outputs/apk/debug/app-debug.apk --title "Jet Skirmish" --notes "APK"
